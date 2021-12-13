@@ -1,2 +1,5 @@
 # database
 /wantedlab.db
+
+# env
+/.env
