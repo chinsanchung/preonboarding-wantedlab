@@ -1,10 +1,16 @@
+from flask import jsonify, make_response, json
 from flask_restx import Namespace, Resource, reqparse
+from .companies_service import CompaniesService
 
 ns = Namespace("companies")
 
 
 @ns.route("")
 class CreateCompany(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.service = CompaniesService()
+
     def post(self):
         parser = reqparse.RequestParser()
         parser.add_argument(
@@ -17,8 +23,12 @@ class CreateCompany(Resource):
             type=list,
             required=True,
             location="json",
-            action="append",
         )
         parser.add_argument("x-wanted-language", type=str, location="headers")
         args = parser.parse_args()
-        return args
+
+        result = self.service.create_company(args)
+        if result["ok"]:
+            return result["data"]
+        else:
+            return make_response(result["error"], result["http_status"])

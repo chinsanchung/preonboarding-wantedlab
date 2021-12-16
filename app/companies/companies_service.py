@@ -1,24 +1,11 @@
 from __future__ import print_function
 from datetime import datetime
-from sqlalchemy import create_engine, orm
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
 from .. import db
 from ..models import Company, Language, CompanyName, CompanyTag
 import config
-
-# 트랜잭션을 하기 전에 미리 생성합니다.
-def create_company():
-    new_company = Company(created_at=datetime.now())
-    db.session.add(new_company)
-    db.session.commit()
-    return new_company
-
-
-# 트랜젝션을 실패할 경우 삭제합니다.
-def delete_company(company):
-    db.session.delete(company)
-    db.session.commit()
-    return
 
 
 def find_or_create_language(keyword, session):
@@ -32,7 +19,9 @@ def find_or_create_language(keyword, session):
 
 
 def check_and_create_company_name(keyword, company_id, lang_id, session):
-    exist_name = CompanyName.query.filter_by(company_name=keyword).first()
+    exist_name = CompanyName.query.filter_by(
+        company_name=keyword, lang_id=lang_id
+    ).first()
     if exist_name is None:
         new_name = CompanyName(
             company_id=company_id,
@@ -40,51 +29,77 @@ def check_and_create_company_name(keyword, company_id, lang_id, session):
             company_name=keyword,
         )
         session.add(new_name)
-        return True
+        return {"ok": True}
     else:
-        return False
+        return {"ok": False}
+
+
+def create_company_tag(keyword, company_id, lang_id, session):
+    new_tag = CompanyTag(tag_name=keyword, company_id=company_id, lang_id=lang_id)
+    session.add(new_tag)
+    return None
 
 
 class CompaniesService:
     def create_company(self, args):
-        http_status = 200
-        error = ""
-        language_dict = dict()
-        name_dict = dict()
-        tags_dict = dict()
+        http_status = 500
+        error = "생성 과정에서 에러가 발생했습니다."
+        languages_cache = dict()
+        names_cache = dict()
+        tags_cache = list()
 
         engine = create_engine(config.SQLALCHEMY_DATABASE_URI)
-        session = orm.Session(engine)
+        session = Session(engine)
 
-        new_company = create_company()
         try:
-            # 회사 이름 등록하기.
-            for key, val in args.company_name.items():
-                # 회사 이름: 이미 존재하는 회사 이름이면 에러를 리턴하고, 아니면 생성합니다.
-                # 언어: 등록하지 않은 언어일 경우 생성합니다.
-                language = find_or_create_language(key, session)
-                language_dict[key] = language
-                # 회사 이름: 동일한 이름의 회사가 존재하면 에러를, 아니면 이름을 데이터로 저장합니다.
-                exist_name = CompanyName.query.filter_by(company_name=val)
+            new_company = Company(created_at=datetime.now())
+            session.add(new_company)
+            session.flush()
+
+            for name_key, name_val in args.company_name.items():
+                language = find_or_create_language(name_key, session)
+                session.flush()
+                languages_cache[name_key] = language
                 is_succeed_to_create_name = check_and_create_company_name(
-                    keyword=val,
+                    keyword=name_val,
                     company_id=new_company.id,
                     lang_id=language.id,
                     session=session,
                 )
-                if is_succeed_to_create_name is False:
+                if not is_succeed_to_create_name["ok"]:
                     http_status = 400
                     error = "이미 존재하는 이름입니다."
                     raise Exception()
-                name_dict[key] = val
+                names_cache[name_key] = name_val
 
-            # 4. 태그: 회사를 이용해서 태그를 등록합니다.
+            for tag in args.tags:
+                for tag_key, tag_val in tag["tag_name"].items():
+                    if tag_key not in languages_cache:
+                        language = find_or_create_language(tag_key, session)
+                        session.flush()
+                        languages_cache[tag_key] = language
+                    create_company_tag(
+                        keyword=tag_val,
+                        company_id=new_company.id,
+                        lang_id=languages_cache[tag_key].id,
+                        session=session,
+                    )
+                    tags_cache.append({"lang_tag": tag_key, "tag_name": tag_val})
+
+            requested_language = args["x-wanted-language"]
+            result = {
+                "company_name": names_cache[requested_language],
+                "tags": [
+                    tag["tag_name"]
+                    for tag in tags_cache
+                    if tag["lang_tag"] == requested_language
+                ],
+            }
+            # commit
             session.commit()
-            return {"ok": True, "http_status": 200, "data": "s"}
-        except Exception as err:
-            print("EXCEPTION", err)
+            return {"ok": True, "http_status": 200, "data": result}
+        except Exception:
             session.rollback()
-            delete_company(new_company)
             return {"ok": False, "http_status": http_status, "error": error}
         finally:
             session.close()
