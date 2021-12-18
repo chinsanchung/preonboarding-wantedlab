@@ -126,3 +126,27 @@ class CompaniesService:
             return {"ok": True, "data": result}
         except Exception:
             return {"ok": False, "http_status": 500, "error": "에러가 발생했습니다."}
+
+    @staticmethod
+    def get_company(args):
+        try:
+            keyword = args["keyword"]
+            lang_tag = args["x-wanted-language"]
+            company_detail = (
+                Company.query.join(CompanyName)
+                .join(CompanyTag)
+                .join(Language)
+                .filter(
+                    CompanyName.company_name == keyword, Language.lang_tag == lang_tag
+                )
+                .add_columns(CompanyName.company_name, CompanyTag.tag_name)
+                .all()
+            )
+            if len(company_detail) == 0:
+                return {"ok": False, "http_status": 400, "error": "해당 회사가 존재하지 않습니다."}
+            result = dict()
+            result["company_name"] = company_detail[0][1]
+            result["tags"] = [value[2] for value in company_detail]
+            return {"ok": True, "data": result}
+        except Exception:
+            return {"ok": False, "http_status": 500, "error": "에러가 발생했습니다."}
