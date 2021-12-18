@@ -3,7 +3,6 @@ from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from .. import db
 from ..models import Company, Language, CompanyName, CompanyTag
 import config
 
@@ -18,13 +17,13 @@ def find_or_create_language(keyword, session):
         return exist_lang
 
 
-def check_and_create_company_name(keyword, company_id, lang_id, session):
+def check_and_create_company_name(keyword, company, lang_id, session):
     exist_name = CompanyName.query.filter_by(
         company_name=keyword, lang_id=lang_id
     ).first()
     if exist_name is None:
         new_name = CompanyName(
-            company_id=company_id,
+            company=company,
             lang_id=lang_id,
             company_name=keyword,
         )
@@ -34,8 +33,8 @@ def check_and_create_company_name(keyword, company_id, lang_id, session):
         return {"ok": False}
 
 
-def create_company_tag(keyword, company_id, lang_id, session):
-    new_tag = CompanyTag(tag_name=keyword, company_id=company_id, lang_id=lang_id)
+def create_company_tag(keyword, company, lang_id, session):
+    new_tag = CompanyTag(tag_name=keyword, company=company, lang_id=lang_id)
     session.add(new_tag)
     return None
 
@@ -63,7 +62,7 @@ class CompaniesService:
                 languages_cache[name_key] = language
                 is_succeed_to_create_name = check_and_create_company_name(
                     keyword=name_val,
-                    company_id=new_company.id,
+                    company=new_company,
                     lang_id=language.id,
                     session=session,
                 )
@@ -81,7 +80,7 @@ class CompaniesService:
                         languages_cache[tag_key] = language
                     create_company_tag(
                         keyword=tag_val,
-                        company_id=new_company.id,
+                        company=new_company,
                         lang_id=languages_cache[tag_key].id,
                         session=session,
                     )
@@ -99,7 +98,8 @@ class CompaniesService:
             # commit
             session.commit()
             return {"ok": True, "http_status": 200, "data": result}
-        except Exception:
+        except Exception as err:
+            print("ERROR::", err)
             session.rollback()
             return {"ok": False, "http_status": http_status, "error": error}
         finally:
