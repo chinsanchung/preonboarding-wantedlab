@@ -20,6 +20,22 @@ class SearchByQuery(Resource):
             return make_response(result["error"], result["http_status"])
 
 
+@ns.route("/<string:keyword>")
+class GetCompany(Resource):
+    def get(self, keyword):
+        parser = reqparse.RequestParser()
+        parser.add_argument("x-wanted-language", type=str, location="headers")
+        args = parser.parse_args()
+
+        result = service.get_company(
+            {"keyword": keyword, "x-wanted-language": args["x-wanted-language"]}
+        )
+        if result["ok"]:
+            return result["data"]
+        else:
+            return make_response(result["error"], result["http_status"])
+
+
 @ns.route("")
 class CreateCompany(Resource):
     def post(self):
