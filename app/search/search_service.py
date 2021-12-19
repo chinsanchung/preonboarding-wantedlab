@@ -13,7 +13,8 @@ class SearchService:
                 )
                 .all()
             )
-
+            if len(company_name_list) == 0:
+                return {"ok": False, "http_status": 404, "error": "회사가 존재하지 않습니다."}
             result = list()
             for val in company_name_list:
                 # 출처: https://stackoverflow.com/a/1960546
