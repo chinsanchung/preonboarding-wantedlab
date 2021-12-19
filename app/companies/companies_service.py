@@ -137,7 +137,7 @@ class CompaniesService:
                 .all()
             )
             if len(company_detail) == 0:
-                return {"ok": False, "http_status": 400, "error": "해당 회사가 존재하지 않습니다."}
+                return {"ok": False, "http_status": 404, "error": "해당 회사가 존재하지 않습니다."}
 
             result = dict()
             result["company_name"] = company_detail[0][1]
