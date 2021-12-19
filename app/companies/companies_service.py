@@ -1,6 +1,6 @@
 from __future__ import print_function
 from datetime import datetime
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import Session
 
 from ..models import Company, Language, CompanyName, CompanyTag
@@ -37,6 +37,14 @@ def create_company_tag(keyword, company, lang_id, session):
     new_tag = CompanyTag(tag_name=keyword, company=company, lang_id=lang_id)
     session.add(new_tag)
     return None
+
+
+def convert_orm_to_dict(row):
+    # 출처: https://stackoverflow.com/a/37350445
+    return {
+        column.key: getattr(row, column.key)
+        for column in inspect(row).mapper.column_attrs
+    }
 
 
 class CompaniesService:
@@ -98,8 +106,7 @@ class CompaniesService:
             # commit
             session.commit()
             return {"ok": True, "http_status": 200, "data": result}
-        except Exception as err:
-            print("ERROR::", err)
+        except Exception:
             session.rollback()
             return {"ok": False, "http_status": http_status, "error": error}
         finally:
@@ -110,18 +117,28 @@ class CompaniesService:
         try:
             keyword = args["keyword"]
             lang_tag = args["x-wanted-language"]
+            target_language = convert_orm_to_dict(
+                Language.query.filter_by(lang_tag=lang_tag).first()
+            )
+            target_company = convert_orm_to_dict(
+                CompanyName.query.filter_by(company_name=keyword).first()
+            )
+
             company_detail = (
                 Company.query.join(CompanyName)
                 .join(CompanyTag)
                 .join(Language)
                 .filter(
-                    CompanyName.company_name == keyword, Language.lang_tag == lang_tag
+                    Company.id == target_company["company_id"],
+                    CompanyName.lang_id == target_language["id"],
+                    CompanyTag.lang_id == target_language["id"],
                 )
                 .add_columns(CompanyName.company_name, CompanyTag.tag_name)
                 .all()
             )
             if len(company_detail) == 0:
                 return {"ok": False, "http_status": 400, "error": "해당 회사가 존재하지 않습니다."}
+
             result = dict()
             result["company_name"] = company_detail[0][1]
             result["tags"] = [value[2] for value in company_detail]
