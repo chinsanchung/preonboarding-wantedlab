@@ -1,4 +1,3 @@
-from __future__ import print_function
 from datetime import datetime
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import Session
@@ -117,11 +116,14 @@ class CompaniesService:
         try:
             keyword = args["keyword"]
             lang_tag = args["x-wanted-language"]
+            target_company = CompanyName.query.filter_by(company_name=keyword).first()
+
+            if target_company is None:
+                return {"ok": False, "http_status": 404, "error": "해당 회사가 존재하지 않습니다."}
+
+            target_company = convert_orm_to_dict(target_company)
             target_language = convert_orm_to_dict(
                 Language.query.filter_by(lang_tag=lang_tag).first()
-            )
-            target_company = convert_orm_to_dict(
-                CompanyName.query.filter_by(company_name=keyword).first()
             )
 
             company_detail = (
@@ -136,8 +138,6 @@ class CompaniesService:
                 .add_columns(CompanyName.company_name, CompanyTag.tag_name)
                 .all()
             )
-            if len(company_detail) == 0:
-                return {"ok": False, "http_status": 404, "error": "해당 회사가 존재하지 않습니다."}
 
             result = dict()
             result["company_name"] = company_detail[0][1]
