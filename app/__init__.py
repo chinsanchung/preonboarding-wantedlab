@@ -23,7 +23,9 @@ def create_app():
     api = Api(app)
 
     from .companies import companies_controller as company
+    from .search import search_controller as search
 
     api.add_namespace(company.ns, "/companies")
+    api.add_namespace(search.ns, "/search")
 
     return app
