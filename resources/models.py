@@ -37,3 +37,7 @@ class CompanyTag(db.Model):
         db.ForeignKey("language.id"),
     )
     tag_name = db.Column(db.String(200), nullable=False)
+
+
+if __name__ == "__main__":
+    db.create_all()
