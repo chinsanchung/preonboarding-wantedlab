@@ -2,8 +2,6 @@
 
 [원티드랩](https://www.wantedlab.com/)에서 제공해주신 API 설계 과제입니다.
 
-AWS Beanstalk 에 Docker 플랫폼으로 배포했으며, 주소는 [http://preonboardingwantedlab-env.eba-rm42kqcd.ap-northeast-2.elasticbeanstalk.com](http://preonboardingwantedlab-env.eba-rm42kqcd.ap-northeast-2.elasticbeanstalk.com)입니다.
-
 ## 과제에 대한 안내
 
 ### 1. 필수 요구 사항
@@ -29,8 +27,8 @@ AWS Beanstalk 에 Docker 플랫폼으로 배포했으며, 주소는 [http://preo
 ## 개발 환경
 
 - 언어: Python
-- 데이터베이스: AWS RDS for MySQL
-- 사용 도구: Flask, Flask-Migrate, Flask-SQLAlchemy, PyMySQL, flask-restx, python=dotenv, requests, Docker, AWS Beanstalk
+- 데이터베이스: ~~AWS RDS for MySQL~~, SQLite3
+- 사용 도구: Flask, Flask-Migrate, Flask-SQLAlchemy, PyMySQL, flask-restx, python=dotenv, requests, Docker, ~~AWS Beanstalk~~
 
 ---
 
@@ -42,20 +40,9 @@ AWS Beanstalk 에 Docker 플랫폼으로 배포했으며, 주소는 [http://preo
 
 ## 실행 방법
 
-**AWS RDS 로 데이터베이스를 설정했기에, 로컬 환경에서 테스트하기 위해선 관련 설정이 담긴 .env 파일이 필요합니다.**
-
 1. `git clone`으로 프로젝트를 가져옵니다.
-2. .env 파일을 생성하고 아래의 내용을 기입합니다.
-
-```
-RDS_HOST
-RDS_PORT
-RDS_DB_NAME
-RDS_USERNAME
-RDS_PASSWORD
-```
-
-3. 다음으로 실행 방법입니다. Docker 를 이용하여 별도의 패키지 설치가 없어도 실행이 가능합니다. 터미널에 `bash docker_run.sh`를 입력하여 이미지를 만들고, 컨테이너를 백그라운드에서 실행합니다. `localhost:8080` 주소에서 테스트하실 수 있습니다.
+2. 가상 환경을 생성한 후, `flask run`으로 앱을 실행합니다.
+3. 회사 생성, 검색, 자동완성을 테스트하실 수 있습니다.
 
 ---
 
