@@ -2,8 +2,6 @@
 
 [원티드랩](https://www.wantedlab.com/)에서 제공해주신 API 설계 과제입니다.
 
-AWS Beanstalk 에 Docker 플랫폼으로 배포했으며, 주소는 [http://preonboardingwantedlab-env.eba-rm42kqcd.ap-northeast-2.elasticbeanstalk.com](http://preonboardingwantedlab-env.eba-rm42kqcd.ap-northeast-2.elasticbeanstalk.com)입니다.
-
 ## 과제에 대한 안내
 
 ### 1. 필수 요구 사항
